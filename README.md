@@ -1,34 +1,37 @@
-# Kanban CMS 后端 API
+# Kanban CMS Backend API
 
-这是一个基于 Flask 的看板（Kanban）内容管理系统 (CMS) 的后端 API 服务。
-它提供了项目、阶段、任务和子任务的 CRUD (创建、读取、更新、删除) 操作。
+This is a Flask-based backend API service for a Kanban Content Management System (CMS).
+It provides CRUD (Create, Read, Update, Delete) operations for projects, stages, tasks, and subtasks.
 
-## 目录
+## Table of Contents
 
-- [环境要求](#环境要求)
-- [安装与设置](#安装与设置)
-- [运行项目](#运行项目)
-- [API接口文档](#api接口文档)
-  - [项目 (Projects)](#项目-projects)
-  - [阶段 (Stages)](#阶段-stages)
-  - [任务 (Tasks)](#任务-tasks)
-  - [子任务 (SubTasks)](#子任务-subtasks)
-  - [测试接口](#测试接口)
+- [Environment Requirements](#environment-requirements)
+- [Installation & Setup](#installation--setup)
+- [Running the Project](#running-the-project)
+- [Running Tests](#running-tests)
+- [API Interface Document](#api-interface-document)
+  - [Projects](#projects)
+  - [Stages](#stages)
+  - [Tasks](#tasks)
+  - [SubTasks](#subtasks)
+  - [Test Interface](#test-interface)
 
-## 环境要求
+## Environment Requirements
 
-- Python 3.10 (推荐使用虚拟环境)
-- pip (Python 包安装器)
+- Python 3.10 (virtual environment recommended)
+- pip (Python package installer)
 
-## 安装与设置
+## Installation & Setup
 
-1.  **克隆仓库 (如果适用)**
+1.  **Clone the Repository (if applicable)**
     ```bash
     # git clone <your-repository-url>
-    # cd backend
+    # cd <repository-name> 
     ```
+    (This step is for a typical Git workflow; if you have the files directly, navigate to the project root directory, likely named `backend` or similar.)
 
-2.  **创建并激活虚拟环境**
+2.  **Create and Activate a Virtual Environment**
+    From the project root directory:
     ```bash
     # For Windows
     python -m venv venv
@@ -39,166 +42,197 @@
     source venv/bin/activate
     ```
 
-3.  **安装依赖**
+3.  **Install Dependencies**
     ```bash
     pip install -r requirements.txt
     ```
 
-4.  **配置环境变量**
-    在 `backend` 目录下创建一个 `.env` 文件 (可以复制 `.env.example` 如果有的话，或手动创建)。
-    内容至少应包含：
+4.  **Configure Environment Variables**
+    In the project root directory, create a `.env` file. You can copy `.env.example` if provided, or create it manually.
+    It should contain at least the following:
     ```env
-    # backend/.env
     FLASK_APP=run.py
-    FLASK_ENV=development # 可选 'production'
-    # SECRET_KEY=your_very_strong_secret_key # 强烈建议设置一个强密钥
+    FLASK_ENV=development # Use 'production' for production deployments
+    SECRET_KEY=your_very_strong_and_unique_secret_key # CHANGE THIS!
 
-    # 数据库URL (可选, config.py 中有默认值)
-    # DEV_DATABASE_URL=sqlite:///instance/kanban_dev.db
-    # DATABASE_URL=sqlite:///instance/kanban_prod.db
+    # Database URLs (SQLite is used by default)
+    # The actual database file will be created in the 'instance' folder.
+    # For development:
+    DEV_DATABASE_URL=sqlite:///kanban_dev.db 
+    # For production (can be the same for SQLite, or a different DB like PostgreSQL):
+    DATABASE_URL=sqlite:///kanban_prod.db
     ```
-    `SECRET_KEY` 对于生产环境至关重要。如果未在 `.env` 中设置，`config.py` 中会有一个默认值，但强烈建议修改它。
-    数据库默认使用 SQLite，文件将存储在 `backend/instance/` 目录下。
+    **Important:** The `SECRET_KEY` is crucial for security (e.g., session management, signing). Generate a strong, random key and keep it secret. The default in `config.py` is for development only and should not be used in production.
+    The database will be created inside an `instance` folder in your project root (e.g., `instance/kanban_dev.db`).
 
-## 运行项目
+5.  **Initialize and Migrate Database**
+    After installing dependencies and setting up the `.env` file, run the following commands from the project root directory to initialize the database and apply migrations:
+    ```bash
+    # Ensure your virtual environment is activated and FLASK_APP is set in .env
+    
+    # Initialize the migrations system (only needed once per project setup)
+    # If the 'migrations' folder already exists, you can skip this command.
+    flask db init
+    
+    # Generate the initial migration script (or subsequent migration scripts if models change)
+    flask db migrate -m "Initial migration with all tables"
+    
+    # Apply the migration to the database (creates tables, etc.)
+    flask db upgrade
+    ```
+    - `flask db init`: Sets up the migration environment. Only run this if the `migrations` directory doesn't exist.
+    - `flask db migrate`: Generates a new migration script based on changes detected in your models (`app/models.py`).
+    - `flask db upgrade`: Applies the latest migration script(s) to your database.
 
-确保虚拟环境已激活，并且您在 `backend` 目录下。
+## Running the Project
+
+Ensure your virtual environment is activated and you are in the project root directory.
 
 ```bash
 python run.py
 ```
 
-默认情况下，服务将运行在 `http://0.0.0.0:5000/`。
-您可以通过访问 `http://localhost:5000/hello` 来测试服务是否正常启动。
+By default, the service will run at `http://0.0.0.0:5000/`.
+You can test if the service is running by navigating to `http://localhost:5000/hello` in your browser or using a tool like `curl`.
 
-## API接口文档
+## Running Tests
 
-所有 API 接口都以 `/api` 为前缀。
+To run the automated tests, ensure you have `pytest` installed (it's included in `requirements.txt`).
+From the project root directory:
 
-### 项目 (Projects)
+```bash
+pytest
+```
 
-#### 1. 获取所有项目
+## API Interface Document
+
+All API endpoints are prefixed with `/api`. Timestamps in responses are in ISO8601 format ending with 'Z' to denote UTC (e.g., `YYYY-MM-DDTHH:MM:SS.ffffffZ`).
+
+### Projects
+
+#### 1. Get All Projects
 
 -   **Method:** `GET`
 -   **Endpoint:** `/api/projects`
--   **Description:** 获取所有项目列表，按创建时间降序排列。
+-   **Description:** Retrieves a list of all projects, ordered by creation date (newest first).
 -   **Request Body:** None
 -   **Success Response (200 OK):**
     ```json
     [
         {
             "id": "project_uuid_1",
-            "name": "项目A",
-            "description": "这是项目A的描述",
-            "created_at": "YYYY-MM-DDTHH:MM:SS.ffffff",
-            "updated_at": "YYYY-MM-DDTHH:MM:SS.ffffff"
+            "name": "Project Alpha",
+            "description": "This is project Alpha.",
+            "created_at": "2023-10-01T10:00:00.123456Z",
+            "updated_at": "2023-10-01T10:05:00.654321Z"
         },
         {
             "id": "project_uuid_2",
-            "name": "项目B",
+            "name": "Project Beta",
             "description": null,
-            "created_at": "YYYY-MM-DDTHH:MM:SS.ffffff",
-            "updated_at": "YYYY-MM-DDTHH:MM:SS.ffffff"
+            "created_at": "2023-09-25T15:30:00.000000Z",
+            "updated_at": "2023-09-25T15:30:00.000000Z"
         }
     ]
     ```
 -   **Error Response (500 Internal Server Error):**
     ```json
     {
-        "error": "服务器内部错误描述"
+        "error": "Failed to retrieve projects due to an internal server error"
     }
     ```
 
-#### 2. 创建一个新项目
+#### 2. Create a New Project
 
 -   **Method:** `POST`
 -   **Endpoint:** `/api/projects`
--   **Description:** 创建一个新的项目。
+-   **Description:** Creates a new project.
 -   **Request Body:**
     ```json
     {
-        "name": "新项目名称", // String, 必需
-        "description": "可选的项目描述" // String, 可选
+        "name": "New Project Name", // String, Required
+        "description": "Optional project description" // String, Optional
     }
     ```
 -   **Success Response (201 Created):**
     ```json
     {
         "id": "new_project_uuid",
-        "name": "新项目名称",
-        "description": "可选的项目描述",
-        "created_at": "YYYY-MM-DDTHH:MM:SS.ffffff",
-        "updated_at": "YYYY-MM-DDTHH:MM:SS.ffffff"
+        "name": "New Project Name",
+        "description": "Optional project description",
+        "created_at": "2023-10-02T12:00:00.000000Z",
+        "updated_at": "2023-10-02T12:00:00.000000Z"
     }
     ```
 -   **Error Responses:**
-    -   `400 Bad Request` (例如，缺少 `name`):
+    -   `400 Bad Request` (e.g., missing `name`):
         ```json
         {
-            "error": "项目名称 (name) 是必需的"
+            "error": "Project name (name) is required"
         }
         ```
-    -   `409 Conflict` (项目名称已存在):
+    -   `409 Conflict` (project name already exists):
         ```json
         {
-            "error": "项目名称 \"新项目名称\" 已存在"
+            "error": "Project name \"New Project Name\" already exists"
         }
         ```
     -   `500 Internal Server Error`:
         ```json
         {
-            "error": "创建项目失败: 错误详情"
+            "error": "Failed to create project due to an internal server error"
         }
         ```
 
-#### 3. 获取单个项目详情
+#### 3. Get Single Project Details
 
 -   **Method:** `GET`
 -   **Endpoint:** `/api/projects/<string:project_id>`
--   **Description:** 获取指定项目的详细信息，包括其下的所有阶段和任务。
+-   **Description:** Retrieves details for a specific project, including its stages, tasks, and subtasks, all sorted by their `order` attribute.
 -   **Path Parameters:**
-    -   `project_id` (String): 项目的唯一ID。
+    -   `project_id` (String): The unique ID of the project.
 -   **Success Response (200 OK):**
     ```json
     {
         "id": "project_uuid",
-        "name": "项目名称",
-        "description": "项目描述",
-        "created_at": "YYYY-MM-DDTHH:MM:SS.ffffff",
-        "updated_at": "YYYY-MM-DDTHH:MM:SS.ffffff",
+        "name": "Project Name",
+        "description": "Project description",
+        "created_at": "2023-10-01T10:00:00.123456Z",
+        "updated_at": "2023-10-01T10:05:00.654321Z",
         "stages": [
             {
                 "id": "stage_uuid_1",
-                "name": "阶段1",
+                "name": "To Do",
                 "project_id": "project_uuid",
                 "order": 0,
-                "created_at": "...",
-                "updated_at": "...",
+                "created_at": "2023-10-01T10:01:00.000000Z",
+                "updated_at": "2023-10-01T10:01:00.000000Z",
                 "tasks": [
                     {
                         "id": "task_uuid_1_1",
-                        "content": "任务1.1",
+                        "content": "Design homepage",
                         "stage_id": "stage_uuid_1",
-                        "assignee": "张三",
-                        "start_date": "YYYY-MM-DD",
-                        "end_date": "YYYY-MM-DD",
+                        "assignee": "Alice",
+                        "start_date": "2023-10-05",
+                        "end_date": "2023-10-10",
                         "order": 0,
-                        "created_at": "...",
-                        "updated_at": "...",
+                        "created_at": "2023-10-01T10:02:00.000000Z",
+                        "updated_at": "2023-10-01T10:02:00.000000Z",
                         "subtasks": [
                             {
                                 "id": "subtask_uuid_1_1_1",
-                                "content": "子任务1.1.1",
+                                "content": "Draft wireframes",
                                 "parent_task_id": "task_uuid_1_1",
-                                "completed": false,
+                                "completed": true,
                                 "order": 0,
-                                "created_at": "...",
-                                "updated_at": "..."
+                                "created_at": "2023-10-01T10:03:00.000000Z",
+                                "updated_at": "2023-10-01T10:04:00.000000Z"
                             }
                         ]
                     }
                 ]
             }
+            // ... other stages sorted by order
         ]
     }
     ```
@@ -206,348 +240,388 @@ python run.py
     -   `404 Not Found`:
         ```json
         {
-            "error": "未找到项目"
+            "error": "Project not found"
         }
         ```
     -   `500 Internal Server Error`.
 
-#### 4. 更新一个项目
+#### 4. Update a Project
 
 -   **Method:** `PUT`
 -   **Endpoint:** `/api/projects/<string:project_id>`
--   **Description:** 更新一个已存在的项目信息。
+-   **Description:** Updates an existing project's information.
 -   **Path Parameters:**
-    -   `project_id` (String): 项目的唯一ID。
+    -   `project_id` (String): The unique ID of the project.
 -   **Request Body:**
     ```json
     {
-        "name": "更新后的项目名称", // String, 可选
-        "description": "更新后的项目描述" // String, 可选 (可为 null 或空字符串)
+        "name": "Updated Project Name", // String, Optional
+        "description": "Updated project description" // String, Optional (can be null or empty)
     }
     ```
 -   **Success Response (200 OK):**
     ```json
     {
         "id": "project_uuid",
-        "name": "更新后的项目名称",
-        "description": "更新后的项目描述",
-        "created_at": "...",
-        "updated_at": "..."
+        "name": "Updated Project Name",
+        "description": "Updated project description",
+        "created_at": "2023-10-01T10:00:00.123456Z",
+        "updated_at": "2023-10-02T14:30:00.000000Z"
     }
     ```
 -   **Error Responses:**
-    -   `400 Bad Request` (例如，请求体为空或 `name` 为空字符串):
+    -   `400 Bad Request` (e.g., request body is empty, or `name` provided as empty string):
         ```json
         {
-            "error": "请求体不能为空" 
+            "error": "Request body cannot be empty. Please provide 'name' and/or 'description'."
         }
-        // 或
+        // or
         {
-            "error": "项目名称不能为空"
+            "error": "Project name cannot be an empty string if provided"
         }
         ```
-    -   `404 Not Found`.
-    -   `409 Conflict` (新名称与其他项目冲突):
+    -   `404 Not Found` (project not found).
+    -   `409 Conflict` (new name conflicts with another project):
         ```json
         {
-            "error": "项目名称 \"更新后的项目名称\" 已被其他项目使用"
+            "error": "Project name \"Updated Project Name\" is already used by another project"
         }
         ```
     -   `500 Internal Server Error`.
 
-#### 5. 删除一个项目
+#### 5. Delete a Project
 
 -   **Method:** `DELETE`
 -   **Endpoint:** `/api/projects/<string:project_id>`
--   **Description:** 删除一个项目及其所有关联的阶段、任务和子任务。
+-   **Description:** Deletes a project and all its associated stages, tasks, and subtasks.
 -   **Path Parameters:**
-    -   `project_id` (String): 项目的唯一ID。
+    -   `project_id` (String): The unique ID of the project.
 -   **Success Response (200 OK):**
     ```json
     {
-        "message": "项目已成功删除"
+        "message": "Project successfully deleted"
     }
     ```
-    (也可能是 `204 No Content`，具体取决于实现)
 -   **Error Responses:**
-    -   `404 Not Found`.
+    -   `404 Not Found` (project not found).
     -   `500 Internal Server Error`.
 
-### 阶段 (Stages)
+### Stages
 
-#### 1. 为项目创建新阶段
+#### 1. Create a New Stage for a Project
 
 -   **Method:** `POST`
 -   **Endpoint:** `/api/projects/<string:project_id>/stages`
--   **Description:** 为指定的项目创建一个新的阶段。
+-   **Description:** Creates a new stage within the specified project. New stages are appended to the end of the existing stages list (highest order).
 -   **Path Parameters:**
-    -   `project_id` (String): 项目的唯一ID。
+    -   `project_id` (String): The unique ID of the parent project.
 -   **Request Body:**
     ```json
     {
-        "name": "新阶段名称" // String, 必需
+        "name": "New Stage Name" // String, Required
     }
     ```
 -   **Success Response (201 Created):**
     ```json
     {
         "id": "new_stage_uuid",
-        "name": "新阶段名称",
+        "name": "New Stage Name",
         "project_id": "project_uuid",
-        "order": 0, // 或下一个可用的顺序值
-        "created_at": "...",
-        "updated_at": "..."
+        "order": 2, // Example: if there were already stages with order 0 and 1
+        "created_at": "2023-10-02T15:00:00.000000Z",
+        "updated_at": "2023-10-02T15:00:00.000000Z",
+        "tasks": [] // Tasks list is empty on creation
     }
     ```
 -   **Error Responses:**
-    -   `400 Bad Request` (例如，缺少 `name`):
+    -   `400 Bad Request` (e.g., missing `name`):
         ```json
         {
-            "error": "阶段名称 (name) 是必需的"
+            "error": "Stage name (name) is required"
         }
         ```
-    -   `404 Not Found` (项目未找到).
+    -   `404 Not Found` (project not found).
     -   `500 Internal Server Error`.
 
-#### 2. 更新一个阶段
+#### 2. Update a Stage
 
 -   **Method:** `PUT`
 -   **Endpoint:** `/api/stages/<string:stage_id>`
--   **Description:** 更新一个已存在的阶段信息 (如名称、顺序)。
+-   **Description:** Updates an existing stage's information (name, order).
 -   **Path Parameters:**
-    -   `stage_id` (String): 阶段的唯一ID。
+    -   `stage_id` (String): The unique ID of the stage.
 -   **Request Body:**
     ```json
     {
-        "name": "更新后的阶段名称", // String, 可选
-        "order": 1 // Integer, 可选
+        "name": "Updated Stage Name", // String, Optional
+        "order": 1 // Integer, Optional
     }
     ```
 -   **Success Response (200 OK):**
     ```json
     {
         "id": "stage_uuid",
-        "name": "更新后的阶段名称",
+        "name": "Updated Stage Name",
         "project_id": "project_uuid",
         "order": 1,
-        "created_at": "...",
-        "updated_at": "..."
+        "created_at": "2023-10-01T10:01:00.000000Z",
+        "updated_at": "2023-10-02T16:00:00.000000Z",
+        "tasks": [/* ... existing tasks ... */]
     }
     ```
 -   **Error Responses:**
-    -   `400 Bad Request` (请求数据为空).
-    -   `404 Not Found` (阶段未找到).
+    -   `400 Bad Request` (e.g., request body empty, name is empty string, order not integer):
+        ```json
+        {
+            "error": "Request body cannot be empty. Please provide 'name' and/or 'order'."
+        }
+        // or
+        {
+            "error": "Stage name cannot be an empty string if provided"
+        }
+        // or
+        {
+            "error": "Order must be an integer"
+        }
+        ```
+    -   `404 Not Found` (stage not found).
     -   `500 Internal Server Error`.
 
-#### 3. 删除一个阶段
+#### 3. Delete a Stage
 
 -   **Method:** `DELETE`
 -   **Endpoint:** `/api/stages/<string:stage_id>`
--   **Description:** 删除一个阶段及其所有关联的任务和子任务。
+-   **Description:** Deletes a stage and all its associated tasks and subtasks.
 -   **Path Parameters:**
-    -   `stage_id` (String): 阶段的唯一ID。
+    -   `stage_id` (String): The unique ID of the stage.
 -   **Success Response (200 OK):**
     ```json
     {
-        "message": "阶段已成功删除"
+        "message": "Stage successfully deleted"
     }
     ```
 -   **Error Responses:**
-    -   `404 Not Found` (阶段未找到).
+    -   `404 Not Found` (stage not found).
     -   `500 Internal Server Error`.
 
-### 任务 (Tasks)
+### Tasks
 
-#### 1. 为阶段创建新任务
+#### 1. Create a New Task for a Stage
 
 -   **Method:** `POST`
 -   **Endpoint:** `/api/stages/<string:stage_id>/tasks`
--   **Description:** 为指定的阶段创建一个新的任务。
+-   **Description:** Creates a new task within the specified stage. New tasks are appended to the end of the existing tasks list for that stage.
 -   **Path Parameters:**
-    -   `stage_id` (String): 阶段的唯一ID。
+    -   `stage_id` (String): The unique ID of the parent stage.
 -   **Request Body:**
     ```json
     {
-        "content": "新任务的内容", // String, 必需
-        "assignee": "负责人名称", // String, 可选
-        "start_date": "YYYY-MM-DD", // String (Date), 可选
-        "end_date": "YYYY-MM-DD" // String (Date), 可选
+        "content": "New task description", // String, Required
+        "assignee": "User Name", // String, Optional
+        "start_date": "YYYY-MM-DD", // String (Date format), Optional
+        "end_date": "YYYY-MM-DD" // String (Date format), Optional
     }
     ```
 -   **Success Response (201 Created):**
     ```json
     {
         "id": "new_task_uuid",
-        "content": "新任务的内容",
+        "content": "New task description",
         "stage_id": "stage_uuid",
-        "assignee": "负责人名称",
-        "start_date": "YYYY-MM-DD",
-        "end_date": "YYYY-MM-DD",
-        "order": 0, // 或下一个可用的顺序值
-        "created_at": "...",
-        "updated_at": "...",
+        "assignee": "User Name",
+        "start_date": "2023-10-05",
+        "end_date": "2023-10-10",
+        "order": 1, // Example: if there was already a task with order 0
+        "created_at": "2023-10-02T17:00:00.000000Z",
+        "updated_at": "2023-10-02T17:00:00.000000Z",
         "subtasks": []
     }
     ```
 -   **Error Responses:**
-    -   `400 Bad Request` (例如，缺少 `content`):
+    -   `400 Bad Request` (e.g., missing `content`, invalid date format):
         ```json
         {
-            "error": "任务内容 (content) 是必需的"
+            "error": "Task content (content) is required"
+        }
+        // or
+        {
+            "error": "Invalid start_date format. Use YYYY-MM-DD."
         }
         ```
-    -   `404 Not Found` (阶段未找到).
+    -   `404 Not Found` (stage not found).
     -   `500 Internal Server Error`.
 
-#### 2. 更新一个任务
+#### 2. Update a Task
 
 -   **Method:** `PUT`
 -   **Endpoint:** `/api/tasks/<string:task_id>`
--   **Description:** 更新一个已存在的任务信息 (内容、负责人、日期、顺序、所属阶段)。
+-   **Description:** Updates an existing task's information (content, assignee, dates, order, or moves to a different stage).
 -   **Path Parameters:**
-    -   `task_id` (String): 任务的唯一ID。
+    -   `task_id` (String): The unique ID of the task.
 -   **Request Body:**
     ```json
     {
-        "content": "更新后的任务内容", // String, 可选
-        "assignee": "新的负责人", // String, 可选 (可为 null)
-        "start_date": "YYYY-MM-DD", // String (Date), 可选 (可为 null)
-        "end_date": "YYYY-MM-DD", // String (Date), 可选 (可为 null)
-        "order": 1, // Integer, 可选
-        "stage_id": "new_stage_uuid" // String, 可选 (用于移动任务到不同阶段)
+        "content": "Updated task content", // String, Optional
+        "assignee": "New Assignee", // String, Optional (can be null)
+        "start_date": "YYYY-MM-DD", // String (Date format), Optional (can be null)
+        "end_date": "YYYY-MM-DD", // String (Date format), Optional (can be null)
+        "order": 0, // Integer, Optional
+        "stage_id": "new_stage_uuid" // String, Optional (to move task)
     }
     ```
 -   **Success Response (200 OK):**
     ```json
     {
         "id": "task_uuid",
-        "content": "更新后的任务内容",
-        "stage_id": "new_stage_uuid", // 或原 stage_id
-        "assignee": "新的负责人",
-        "start_date": "YYYY-MM-DD",
-        "end_date": "YYYY-MM-DD",
-        "order": 1,
-        "created_at": "...",
-        "updated_at": "...",
-        "subtasks": [/* ... */]
+        "content": "Updated task content",
+        "stage_id": "new_stage_uuid",
+        "assignee": "New Assignee",
+        "start_date": "2023-10-06",
+        "end_date": "2023-10-12",
+        "order": 0,
+        "created_at": "2023-10-01T10:02:00.000000Z",
+        "updated_at": "2023-10-02T18:00:00.000000Z",
+        "subtasks": [/* ... existing subtasks ... */]
     }
     ```
 -   **Error Responses:**
-    -   `400 Bad Request` (请求数据为空).
-    -   `404 Not Found` (任务或目标阶段未找到).
+    -   `400 Bad Request` (e.g., empty body, empty content string, invalid date, invalid order):
+        ```json
+        {
+            "error": "Request body cannot be empty. Please provide fields to update."
+        }
+        // or
+        {
+            "error": "Task content cannot be an empty string if provided"
+        }
+        ```
+    -   `404 Not Found` (task not found, or target `stage_id` not found).
     -   `500 Internal Server Error`.
 
-#### 3. 删除一个任务
+#### 3. Delete a Task
 
 -   **Method:** `DELETE`
 -   **Endpoint:** `/api/tasks/<string:task_id>`
--   **Description:** 删除一个任务及其所有关联的子任务。
+-   **Description:** Deletes a task and all its associated subtasks.
 -   **Path Parameters:**
-    -   `task_id` (String): 任务的唯一ID。
+    -   `task_id` (String): The unique ID of the task.
 -   **Success Response (200 OK):**
     ```json
     {
-        "message": "任务已成功删除"
+        "message": "Task successfully deleted"
     }
     ```
 -   **Error Responses:**
-    -   `404 Not Found` (任务未找到).
+    -   `404 Not Found` (task not found).
     -   `500 Internal Server Error`.
 
-### 子任务 (SubTasks)
+### SubTasks
 
-#### 1. 为父任务创建新子任务
+#### 1. Create a New SubTask for a Parent Task
 
 -   **Method:** `POST`
 -   **Endpoint:** `/api/tasks/<string:parent_task_id>/subtasks`
--   **Description:** 为指定的父任务创建一个新的子任务。
+-   **Description:** Creates a new subtask under the specified parent task. New subtasks are appended to the end of the existing subtasks list for that parent.
 -   **Path Parameters:**
-    -   `parent_task_id` (String): 父任务的唯一ID。
+    -   `parent_task_id` (String): The unique ID of the parent task.
 -   **Request Body:**
     ```json
     {
-        "content": "新子任务的内容", // String, 必需
-        "completed": false // Boolean, 可选, 默认为 false
+        "content": "New subtask details", // String, Required
+        "completed": false // Boolean, Optional, Defaults to false
     }
     ```
 -   **Success Response (201 Created):**
     ```json
     {
         "id": "new_subtask_uuid",
-        "content": "新子任务的内容",
-        "parent_task_id": "parent_task_id",
+        "content": "New subtask details",
+        "parent_task_id": "parent_task_uuid",
         "completed": false,
-        "order": 0, // 或下一个可用的顺序值
-        "created_at": "...",
-        "updated_at": "..."
+        "order": 0, // Example: if this is the first subtask
+        "created_at": "2023-10-02T19:00:00.000000Z",
+        "updated_at": "2023-10-02T19:00:00.000000Z"
     }
     ```
 -   **Error Responses:**
-    -   `400 Bad Request` (例如，缺少 `content`):
+    -   `400 Bad Request` (e.g., missing `content`, `completed` is not boolean):
         ```json
         {
-            "error": "子任务内容 (content) 是必需的"
+            "error": "Subtask content (content) is required"
+        }
+        // or
+        {
+            "error": "Completed status must be a boolean"
         }
         ```
-    -   `404 Not Found` (父任务未找到).
+    -   `404 Not Found` (parent task not found).
     -   `500 Internal Server Error`.
 
-#### 2. 更新一个子任务
+#### 2. Update a SubTask
 
 -   **Method:** `PUT`
 -   **Endpoint:** `/api/subtasks/<string:subtask_id>`
--   **Description:** 更新一个已存在的子任务信息 (内容、完成状态、顺序)。
+-   **Description:** Updates an existing subtask's information (content, completion status, order).
 -   **Path Parameters:**
-    -   `subtask_id` (String): 子任务的唯一ID。
+    -   `subtask_id` (String): The unique ID of the subtask.
 -   **Request Body:**
     ```json
     {
-        "content": "更新后的子任务内容", // String, 可选
-        "completed": true, // Boolean, 可选
-        "order": 1 // Integer, 可选
+        "content": "Updated subtask details", // String, Optional
+        "completed": true, // Boolean, Optional
+        "order": 1 // Integer, Optional
     }
     ```
 -   **Success Response (200 OK):**
     ```json
     {
         "id": "subtask_uuid",
-        "content": "更新后的子任务内容",
-        "parent_task_id": "parent_task_id",
+        "content": "Updated subtask details",
+        "parent_task_id": "parent_task_uuid",
         "completed": true,
         "order": 1,
-        "created_at": "...",
-        "updated_at": "..."
+        "created_at": "2023-10-01T10:03:00.000000Z",
+        "updated_at": "2023-10-02T20:00:00.000000Z"
     }
     ```
 -   **Error Responses:**
-    -   `400 Bad Request` (请求数据为空).
-    -   `404 Not Found` (子任务未找到).
+    -   `400 Bad Request` (e.g., empty body, empty content string, invalid `completed`, invalid `order`):
+        ```json
+        {
+            "error": "Request body cannot be empty"
+        }
+        // or
+        {
+            "error": "Subtask content cannot be empty"
+        }
+        ```
+    -   `404 Not Found` (subtask not found).
     -   `500 Internal Server Error`.
 
-#### 3. 删除一个子任务
+#### 3. Delete a SubTask
 
 -   **Method:** `DELETE`
 -   **Endpoint:** `/api/subtasks/<string:subtask_id>`
--   **Description:** 删除一个子任务。
+-   **Description:** Deletes a subtask.
 -   **Path Parameters:**
-    -   `subtask_id` (String): 子任务的唯一ID。
+    -   `subtask_id` (String): The unique ID of the subtask.
 -   **Success Response (200 OK):**
     ```json
     {
-        "message": "子任务已成功删除"
+        "message": "SubTask successfully deleted" 
     }
     ```
 -   **Error Responses:**
-    -   `404 Not Found` (子任务未找到).
+    -   `404 Not Found` (subtask not found).
     -   `500 Internal Server Error`.
 
-### 测试接口
+### Test Interface
 
 #### 1. Hello World
 
 -   **Method:** `GET`
 -   **Endpoint:** `/hello`
--   **Description:** 一个简单的测试路由，用于检查后端服务是否正在运行。
+-   **Description:** A simple test route to check if the backend service is running.
 -   **Success Response (200 OK):**
     ```text
     你好，看板后端已启动！(Hello, Kanban Backend is Running!)
